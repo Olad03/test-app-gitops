@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: temperature-converter-app
+spec:
+  destination:
+    name: ''
+    namespace: temp-converter-app1
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    path: .
+    repoURL: https://github.com/Olad03/sample-gitops
+    targetRevision: HEAD
+  syncPolicy:
+    syncOptions:
+    - PruneLast=true
+    - Validate=false
