@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: app-php-build
+  name: app-nodejs-build
 spec:
   params:
     - description: GitHub source code repository URL
@@ -22,17 +22,16 @@ spec:
         git clone -b $(params.gitRevision) $(params.gitUrl) ./ || exit 1
         echo "-------------------------------------"
       workingDir: $(workspaces.doc-source.path)
-
-    - image: 'php:8.2-cli'
-      name: php-lint
+    - image: 'node:16-alpine'
+      name: run-tests
       resources: {}
       script: |
         #!/usr/bin/env sh
-
-        echo "--------Running PHP syntax check---------"
-        find . -name "*.php" -exec php -l {} \; || exit 1
-        echo "----------------------------------------"
+            
+        echo "--------Running Test cases---------"
+        npm i jest
+        npm run test || exit 1
+        echo "-----------------------------------"
       workingDir: $(workspaces.doc-source.path)
-
   workspaces:
     - name: doc-source

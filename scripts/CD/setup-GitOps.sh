@@ -30,7 +30,7 @@ echo "\033[1;32mSuccessfully completed setting up GitOps Repository. Do you want
 read -r answer
 if [ "$answer" != "${answer#[Yy]}" ] ;then
     echo "Syncing the ArgoCD application..."
-    argocd app sync temperature-converter-app
+    argocd app sync php-app-register
 else
     echo "\033[1;34mYou can sync the Argo CD application later with the following command:\033[0m"
     echo "\033[1;35margocd app sync temperature-converter-app\033[0m"

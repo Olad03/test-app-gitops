@@ -1,0 +1,81 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: config-updater
+spec:
+  params:
+    - name: gitUrl
+      type: string
+      description: GitHub source code repository URL
+
+    - name: gitRevision
+      type: string
+      description: GitHub branch
+
+    - name: IMAGE
+      type: string
+      description: Reference of the image produced by buildah
+
+    - name: TAG
+      type: string
+      description: Reference of the image tag produced by buildah
+
+    - name: DEPLOYMENT_PATH
+      type: string
+      description: Path to deployment.yaml inside the GitOps repo
+      default: apps/php-simple-register/deployment.yaml
+
+  steps:
+    - name: git-clone
+      image: registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8:v1.6.2-21
+      workingDir: $(workspaces.doc-source.path)
+      script: |
+        #!/usr/bin/env sh
+        set -e
+
+        echo "------Cloning gitops repo------"
+        #       rm -rf repo
+        git clone -b $(params.gitRevision) "$(params.gitUrl)" repo
+        echo "-------------------------------"
+
+    - name: update-image-tag
+      image: python:3.8.5-slim
+      workingDir: $(workspaces.doc-source.path)/repo
+      script: |
+        #!/usr/bin/env sh
+        set -e
+
+        echo "------Updating Image Tag------"
+
+        pip install --no-cache-dir pyyaml
+
+        if [ ! -f "$(params.DEPLOYMENT_PATH)" ]; then
+          echo "ERROR: Deployment file not found: $(params.DEPLOYMENT_PATH)"
+          exit 1
+        fi
+
+        python -c "import yaml; f='$(params.DEPLOYMENT_PATH)'; d=yaml.safe_load(open(f)); d['spec']['template']['spec']['containers'][0]['image']='$(params.IMAGE):$(params.TAG)'; yaml.safe_dump(d, open(f,'w'), sort_keys=False)"
+
+        echo "-------------------------------"
+
+    - name: git-push
+      image: registry.redhat.io/openshift-pipelines/pipelines-git-init-rhel8:v1.6.2-21
+      workingDir: $(workspaces.doc-source.path)/repo
+      script: |
+        #!/usr/bin/env sh
+        set -e
+
+        echo "------Pushing the updates------"
+
+        git config --global user.email "tekton@tekton.dev"
+        git config --global user.name "Tekton Pipeline"
+
+        git status
+        git add "$(params.DEPLOYMENT_PATH)"
+        git commit -m "Updated image to $(params.IMAGE):$(params.TAG)" || true
+        git push origin $(params.gitRevision)
+
+        echo "-------------------------------"
+
+  workspaces:
+    - name: doc-source

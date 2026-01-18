@@ -4,14 +4,14 @@ metadata:
   name: php-app-register
   namespace: openshift-gitops
 spec:
+  destination:
+    namespace: test-app
+    server: https://kubernetes.default.svc
   project: default
   source:
-    repoURL: https://github.com/olad03/test-app-gitops
-    targetRevision: main
     path: apps/php-simple-register
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: test-app
+    repoURL: https://github.com/Olad03/test-app-gitops
+    targetRevision: main
   syncPolicy:
     automated:
       prune: true
